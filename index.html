@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta charset="UTF-8">
+    <title>Simple Expense Tracker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: 300;
+            margin-bottom: 10px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0;
+        }
+
+        .stat-item {
+            background: white;
+            padding: 30px;
+            text-align: center;
+            border-right: 1px solid #eee;
+        }
+
+        .stat-item:last-child {
+            border-right: none;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .add-expense {
+            background: #ecf0f1;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 40px;
+        }
+
+        .add-expense h3 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        input, select, button {
+            padding: 12px 16px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        button {
+            background: #3498db;
+            color: white;
+            border: 2px solid #3498db;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background: #2980b9;
+            border-color: #2980b9;
+        }
+
+        .charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .chart-container {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            height: 400px;
+        }
+
+        .chart-container h4 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        .expenses-list {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .expenses-list h4 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .expense-item {
+            background: white;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #3498db;
+        }
+
+        .expense-info h5 {
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+
+        .expense-meta {
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+
+        .expense-amount {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-right: 15px;
+        }
+
+        .delete-btn {
+            background: #e74c3c;
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .delete-btn:hover {
+            background: #c0392b;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .charts {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .expense-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💸 Expense Tracker</h1>
+            <p>Track your daily, monthly, and yearly spending</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="dailyTotal">₹0.00</div>
+                <div class="stat-label">Today</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="monthlyTotal">₹0.00</div>
+                <div class="stat-label">This Month</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="yearlyTotal">₹0.00</div>
+                <div class="stat-label">This Year</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="avgDaily">₹0.00</div>
+                <div class="stat-label">Daily Average</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="add-expense">
+                <h3>Add New Expense</h3>
+                <div class="form-grid">
+                    <input type="text" id="description" placeholder="Description" />
+                    <input type="number" id="amount" placeholder="Amount" step="0.01" />
+                    <select id="category">
+                        <option value="food">Food</option>
+                        <option value="transport">Transport</option>
+                        <option value="entertainment">Entertainment</option>
+                        <option value="shopping">Shopping</option>
+                        <option value="bills">Bills</option>
+                        <option value="health">Health</option>
+                        <option value="other">Other</option>
+                    </select>
+                    <input type="date" id="expenseDate" />
+                    <button onclick="addExpense()">Add Expense</button>
+                </div>
+            </div>
+
+            <div class="charts">
+                <div class="chart-container">
+                    <h4>Spending by Category</h4>
+                    <canvas id="categoryChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h4>30-Day Trend</h4>
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
+            <div class="expenses-list">
+                <h4>Recent Expenses</h4>
+                <div id="expensesList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+        let categoryChart, trendChart;
+
+        // Set default date to today
+        document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
+
+        function addExpense() {
+            const description = document.getElementById('description').value.trim();
+            const amount = parseFloat(document.getElementById('amount').value);
+            const category = document.getElementById('category').value;
+            const date = document.getElementById('expenseDate').value;
+
+            if (!description || !amount || !date || amount <= 0) {
+                alert('Please fill in all fields with valid values.');
+                return;
+            }
+
+            const expense = {
+                id: Date.now(),
+                description,
+                amount,
+                category,
+                date: new Date(date)
+            };
+
+            expenses.push(expense);
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+
+            // Clear form
+            document.getElementById('description').value = '';
+            document.getElementById('amount').value = '';
+            
+            updateDisplay();
+        }
+
+        function deleteExpense(id) {
+            expenses = expenses.filter(expense => expense.id !== id);
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            updateStats();
+            updateCharts();
+            updateExpensesList();
+        }
+
+        function updateStats() {
+            const today = new Date();
+            const currentMonth = today.getMonth();
+            const currentYear = today.getFullYear();
+
+            const dailyExpenses = expenses.filter(expense => {
+                const expenseDate = new Date(expense.date);
+                return expenseDate.toDateString() === today.toDateString();
+            });
+
+            const monthlyExpenses = expenses.filter(expense => {
+                const expenseDate = new Date(expense.date);
+                return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
+            });
+
+            const yearlyExpenses = expenses.filter(expense => {
+                const expenseDate = new Date(expense.date);
+                return expenseDate.getFullYear() === currentYear;
+            });
+
+            const dailyTotal = dailyExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+            const monthlyTotal = monthlyExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+            const yearlyTotal = yearlyExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+
+            const daysThisMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const currentDay = today.getDate();
+            const avgDaily = monthlyTotal / currentDay;
+
+            document.getElementById('dailyTotal').textContent   = `₹${dailyTotal.toFixed(2)}`;
+			document.getElementById('monthlyTotal').textContent = `₹${monthlyTotal.toFixed(2)}`;
+			document.getElementById('yearlyTotal').textContent  = `₹${yearlyTotal.toFixed(2)}`;
+			document.getElementById('avgDaily').textContent     = `₹${avgDaily.toFixed(2)}`;
+
+        }
+
+        function updateCharts() {
+            updateCategoryChart();
+            updateTrendChart();
+        }
+
+        function updateCategoryChart() {
+            const categoryData = {};
+            expenses.forEach(expense => {
+                categoryData[expense.category] = (categoryData[expense.category] || 0) + expense.amount;
+            });
+
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            
+            if (categoryChart) {
+                categoryChart.destroy();
+            }
+
+            if (Object.keys(categoryData).length === 0) {
+                return;
+            }
+
+            categoryChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(categoryData).map(key => key.charAt(0).toUpperCase() + key.slice(1)),
+                    datasets: [{
+                        data: Object.values(categoryData),
+                        backgroundColor: [
+                            '#3498db', '#2ecc71', '#f39c12', '#e74c3c', 
+                            '#9b59b6', '#1abc9c', '#34495e', '#95a5a6'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateTrendChart() {
+            const last30Days = [];
+            const today = new Date();
+            
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                last30Days.push(date);
+            }
+
+            const trendData = last30Days.map(date => {
+                const dayExpenses = expenses.filter(expense => {
+                    const expenseDate = new Date(expense.date);
+                    return expenseDate.toDateString() === date.toDateString();
+                });
+                return dayExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+            });
+
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            
+            if (trendChart) {
+                trendChart.destroy();
+            }
+
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: last30Days.map(date => `${date.getMonth() + 1}/${date.getDate()}`),
+                    datasets: [{
+                        label: 'Daily Spending',
+                        data: trendData,
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + value.toFixed(0);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateExpensesList() {
+            const expensesList = document.getElementById('expensesList');
+            const recentExpenses = expenses.slice(-10).reverse();
+
+            if (recentExpenses.length === 0) {
+                expensesList.innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 20px;">No expenses yet. Add your first expense above!</p>';
+                return;
+            }
+
+            expensesList.innerHTML = recentExpenses.map(expense => `
+                <div class="expense-item">
+                    <div class="expense-info">
+                        <h5>${expense.description}</h5>
+                        <div class="expense-meta">
+                            ${expense.category} • ${new Date(expense.date).toLocaleDateString()}
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <span class="expense-amount">₹${expense.amount.toFixed(2)}</span>
+                        <button class="delete-btn" onclick="deleteExpense(₹{expense.id})">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Initialize the app
+        updateDisplay();
+
+        // Focus on description field for quick entry
+        document.getElementById('description').focus();
+
+        // Add keyboard shortcut
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                addExpense();
+            }
+        });
+    </script>
+</body>
+</html>
